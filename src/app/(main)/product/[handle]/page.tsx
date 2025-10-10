@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { GET_PRODUCT_BY_HANDLE_QUERY } from "@/graphql/products";
 import { useStorefrontQuery } from "@/hooks/useStorefront";
-import {
+import type {
   GetProductByHandleQuery,
   ImageEdge,
   ProductOption,
-  ProductPriceRange,
   ProductVariant,
+  Product,
 } from "@/types/shopify-graphql";
 import ProductCarousel from "@/components/view/ProductCarousel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,11 +28,7 @@ export default function Product() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant>();
   const [quantity, setQuantity] = useState<number>(1);
-  const [justAdded, setJustAdded] = useState<{
-    id: string;
-    title?: string;
-    qty: number;
-  } | null>(null);
+  const [justAdded, setJustAdded] = useState<{ id: string; title?: string; qty: number } | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   const { data, isLoading } = useStorefrontQuery<GetProductByHandleQuery>(
@@ -43,6 +39,7 @@ export default function Product() {
     }
   );
 
+  // Initialize selected variant and options
   useEffect(() => {
     if (!data?.product) return;
     const first = data.product.variants?.edges?.[0]?.node;
@@ -55,13 +52,13 @@ export default function Product() {
   }, [data]);
 
   const handleSelectOptions = (options: Record<string, string>) => {
-    const variant = data?.product?.variants?.edges.find((variant) => {
-      return Object.keys(options).every((key) => {
-        return variant.node.selectedOptions.some(
+    const variant = data?.product?.variants?.edges.find((variant) =>
+      Object.keys(options).every((key) =>
+        variant.node.selectedOptions.some(
           (option) => option.name === key && option.value === options[key]
-        );
-      });
-    });
+        )
+      )
+    );
     setSelectedVariant(variant?.node as ProductVariant);
     setSelectedOptions(options);
   };
@@ -102,6 +99,7 @@ export default function Product() {
   const description = data?.product?.descriptionHtml ?? data?.product?.description ?? "";
   const descriptionPreview = description.split(" ").slice(0, 50).join(" ");
 
+  // Loading skeleton
   if (isLoading)
     return (
       <div className="flex flex-col md:flex-row gap-4 my-10 px-4 pt-10">
@@ -165,10 +163,14 @@ export default function Product() {
             options={data?.product?.options as ProductOption[]}
           />
 
-          <div className="flex items-center justify-between">
-            <ProductPrice priceRange={data?.product?.priceRange as ProductPriceRange} />
-          </div>
+          {/* ✅ Product Price */}
+          {data?.product && (
+            <div className="flex items-center justify-between">
+              <ProductPrice product={data.product as Product} />
+            </div>
+          )}
 
+          {/* Quantity + Add to Cart */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground">Qty</label>
@@ -183,9 +185,7 @@ export default function Product() {
                 <input
                   className="w-12 text-center bg-transparent outline-none"
                   value={quantity}
-                  onChange={(e) =>
-                    setQuantity(Math.max(1, Number(e.target.value || 1)))
-                  }
+                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value || 1)))}
                   inputMode="numeric"
                 />
                 <button
@@ -214,6 +214,7 @@ export default function Product() {
             </motion.div>
           </div>
 
+          {/* Just Added Toast */}
           <AnimatePresence>
             {justAdded && (
               <motion.div
@@ -228,11 +229,7 @@ export default function Product() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    onClick={() => router.push("/cart")}
-                    className="text-sm"
-                  >
+                  <Button variant="ghost" onClick={() => router.push("/cart")} className="text-sm">
                     View cart
                   </Button>
                   <Button variant="link" onClick={handleUndo} className="text-sm">
@@ -246,12 +243,14 @@ export default function Product() {
       </motion.div>
 
       {/* Mobile sticky bottom bar */}
-      <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4 md:hidden flex justify-between items-center">
-        <ProductPrice priceRange={data?.product?.priceRange as ProductPriceRange} />
-        <Button onClick={handleAddtoCart} disabled={!selectedVariant}>
-          Add to Cart
-        </Button>
-      </div>
+      {data?.product && (
+        <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4 md:hidden flex justify-between items-center">
+          <ProductPrice product={data.product as Product} />
+          <Button onClick={handleAddtoCart} disabled={!selectedVariant}>
+            Add to Cart
+          </Button>
+        </div>
+      )}
     </>
   );
 }
