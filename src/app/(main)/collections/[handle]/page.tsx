@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import ProductCard from "@/components/view/ProductCard";
 import { GET_COLLECTION_BY_HANDLE_WITH_PAGINATION_QUERY } from "@/graphql/collections";
-import { useStorefrontClient } from "@/hooks/useStorefront"; // ✅ use client to manually query
+import { useStorefrontClient } from "@/hooks/useStorefront";
 import { GetCollectionByHandleQuery, Product } from "@/types/shopify-graphql";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "motion/react";
@@ -13,9 +13,8 @@ const CollectionPage = () => {
   const params = useParams();
   const handle = params.handle as string;
 
-  const storefront = useStorefrontClient(); // ✅ we’ll use client.query() instead of refetch
+  const storefront = useStorefrontClient();
   const [products, setProducts] = useState<Product[]>([]);
-  // const [currentCursor, setCurrentCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pageInfo, setPageInfo] = useState<{ hasNextPage: boolean; endCursor: string | null }>({
@@ -23,43 +22,42 @@ const CollectionPage = () => {
     endCursor: null,
   });
 
-  // Initial fetch
-const fetchProducts = useCallback(
-  async (cursor: string | null = null) => {
-    try {
-      const data = await storefront.request<GetCollectionByHandleQuery>(
-        GET_COLLECTION_BY_HANDLE_WITH_PAGINATION_QUERY,
-        { handle, first: 12, after: cursor }
-      );
+  // ✅ Fetch products (now includes compareAtPrice support)
+  const fetchProducts = useCallback(
+    async (cursor: string | null = null) => {
+      try {
+        const data = await storefront.request<GetCollectionByHandleQuery>(
+          GET_COLLECTION_BY_HANDLE_WITH_PAGINATION_QUERY,
+          { handle, first: 12, after: cursor }
+        );
 
-      const newProducts =
-        data?.collection?.products?.edges
-          ?.map((e) => e?.node)
-          .filter(Boolean) as Product[];
+        const newProducts =
+          data?.collection?.products?.edges
+            ?.map((e) => e?.node)
+            .filter(Boolean) as Product[];
 
-      setProducts((prev) => (cursor ? [...prev, ...newProducts] : newProducts));
-      setPageInfo({
-        hasNextPage: data?.collection?.products?.pageInfo?.hasNextPage || false,
-        endCursor: data?.collection?.products?.pageInfo?.endCursor || null,
-      });
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  },
-  [storefront, handle]
-);
+        setProducts((prev) => (cursor ? [...prev, ...newProducts] : newProducts));
 
+        setPageInfo({
+          hasNextPage: data?.collection?.products?.pageInfo?.hasNextPage || false,
+          endCursor: data?.collection?.products?.pageInfo?.endCursor || null,
+        });
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [storefront, handle]
+  );
 
-  // Reset when collection changes
+  // ✅ Reset + refetch when handle changes
   useEffect(() => {
     setProducts([]);
-    // setCurrentCursor(null);
     setLoading(true);
     fetchProducts(null);
   }, [handle, fetchProducts]);
 
-  // Infinite scroll observer
+  // ✅ Infinite scroll
   const loaderRef = useRef<HTMLDivElement>(null);
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -75,7 +73,7 @@ const fetchProducts = useCallback(
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
       root: null,
-      rootMargin: "200px", // ✅ triggers early
+      rootMargin: "200px",
       threshold: 0,
     });
     if (loaderRef.current) observer.observe(loaderRef.current);
@@ -107,6 +105,7 @@ const fetchProducts = useCallback(
             transition={{ duration: 0.4, delay: index * 0.05 }}
             className="w-[350px]"
           >
+            {/* ✅ Pass full product so ProductPrice can read compareAtPrice */}
             <ProductCard product={product} />
           </motion.div>
         ))}
@@ -125,14 +124,26 @@ const fetchProducts = useCallback(
         </motion.div>
       )}
 
-      {/* Initial loading */}
-      {loading && products.length === 0 && (
-        <div className="flex flex-wrap justify-center gap-8">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <Skeleton key={i} className="h-[400px] w-[350px] animate-pulse" />
-          ))}
+{/* Initial Loading */}
+{loading && products.length === 0 && (
+  <div className="flex flex-wrap justify-center gap-8 w-[80%] mx-auto">
+    {Array.from({ length: 12 }).map((_, i) => (
+      <div key={i} className="w-[350px] border rounded-lg overflow-hidden shadow-sm">
+        {/* Image Skeleton */}
+        <Skeleton className="h-[300px] w-full animate-pulse" />
+        <div className="p-4 flex flex-col gap-2">
+          {/* Title Skeleton */}
+          <Skeleton className="h-6 w-3/4 animate-pulse rounded" />
+          {/* Price Skeleton */}
+          <Skeleton className="h-5 w-1/2 animate-pulse rounded" />
+          {/* CompareAtPrice Skeleton */}
+          <Skeleton className="h-4 w-1/3 animate-pulse rounded" />
         </div>
-      )}
+      </div>
+    ))}
+  </div>
+)}
+
     </div>
   );
 };

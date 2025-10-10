@@ -17,10 +17,11 @@ const ProductCard = ({ product }: { product: Product }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Get primary and hover images
+  // ✅ Get primary and hover images
   const primaryImage = product.featuredImage?.url ?? "";
   const hoverImage = product.images?.edges?.[1]?.node?.url ?? primaryImage;
 
+  // ✅ Add to Cart Handler
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsAdding(true);
@@ -55,9 +56,8 @@ const ProductCard = ({ product }: { product: Product }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex flex-col h-full justify-between">
-        {/* Image Container */}
+        {/* 🖼️ Image Container */}
         <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden border border-beige-200">
-          {/* Image wrapper for smooth scaling */}
           <div className="absolute inset-0 w-full h-full transform group-hover:scale-105 transition-transform duration-[1.2s] ease-out">
             {/* Primary Image */}
             <Image
@@ -71,7 +71,7 @@ const ProductCard = ({ product }: { product: Product }) => {
               priority={false}
             />
 
-            {/* Hover Image - Preloaded but hidden */}
+            {/* Hover Image */}
             <Image
               src={hoverImage}
               alt={`${product.title} alternate view`}
@@ -85,15 +85,16 @@ const ProductCard = ({ product }: { product: Product }) => {
           </div>
         </div>
 
-        {/* Title + Price */}
+        {/* 🏷️ Title + Price */}
         <div className="mt-3">
           <h2 className="text-lg font-serif tracking-wide text-black line-clamp-2">
             {product.title}
           </h2>
-          <ProductPrice priceRange={product.priceRange} />
+          {/* ✅ Pass full product for compareAtPrice support */}
+          <ProductPrice product={product} />
         </div>
 
-        {/* Add to Cart Button */}
+        {/* 🛒 Add to Cart Button */}
         <div className="mt-4">
           <Button
             className={`w-full rounded-xl transition-colors ${

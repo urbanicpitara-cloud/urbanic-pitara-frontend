@@ -1,38 +1,40 @@
 "use client";
 
-import { ProductPriceRange } from "@/types/shopify-graphql";
+import { Product } from "@/types/shopify-graphql";
 import React from "react";
 
-const ProductPrice = ({ priceRange }: { priceRange: ProductPriceRange }) => {
-  const formatPrice = (amount: string, currencyCode: string) => {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currencyCode,
-      currencyDisplay: "narrowSymbol",
-    }).format(parseFloat(amount));
-  };
+const ProductPrice = ({ product }: { product: Product }) => {
+  const variant = product?.variants?.edges?.[0]?.node;
+  const current = variant?.price?.amount;
+  const compareAt = variant?.compareAtPrice?.amount;
+  const currency = variant?.price?.currencyCode;
 
-  const min = priceRange.minVariantPrice.amount;
-  const max = priceRange.maxVariantPrice.amount;
-  const currency = priceRange.minVariantPrice.currencyCode;
+  const formatPrice = (amount?: string) =>
+    amount && currency
+      ? new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency,
+          currencyDisplay: "narrowSymbol",
+        }).format(parseFloat(amount))
+      : "";
 
   return (
-    <div className="flex items-baseline gap-2">
-      {/* Main Price */}
+    <div className="flex items-baseline gap-2 mt-1">
+      {/* Current Price */}
       <p
         suppressHydrationWarning
-        className="text-xl font-serif font-medium text-black"
+        className="text-xl font-price font-semibold text-black tracking-wide"
       >
-        {formatPrice(min, currency)}
+        {formatPrice(current)}
       </p>
 
-      {/* Show range or strikethrough max price */}
-      {max !== min && (
+      {/* Compare-at (original) Price */}
+      {compareAt && parseFloat(compareAt) > parseFloat(current || "0") && (
         <p
           suppressHydrationWarning
-          className="text-md font-sans text-gold line-through"
+          className="text-sm text-gold/80 line-through font-price relative -top-[1px]"
         >
-          {formatPrice(max, currency)}
+          {formatPrice(compareAt)}
         </p>
       )}
     </div>
