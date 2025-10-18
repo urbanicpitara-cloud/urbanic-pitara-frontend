@@ -9,7 +9,7 @@ const WhatsAppButton = ({ phoneNumber = "919639798848" }) => {
     // Trigger the animation on mount
     const timeout = setTimeout(() => {
       setVisible(true);
-    }, 100); // optional slight delay
+    }, 200); // optional slight delay
 
     return () => clearTimeout(timeout);
   }, []);

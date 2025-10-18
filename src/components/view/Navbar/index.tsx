@@ -60,6 +60,12 @@ const Navbar = () => {
   const handleLogout = () => {
     document.cookie =
       "customerAccessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    // update local state immediately so UI reflects logout without a refresh
+    setIsLoggedIn(false);
+    // close any open menus/dialogs
+    setMobileMenuOpen(false);
+    setOpen(false);
+    // navigate to home after state update
     router.push("/");
   };
 
@@ -205,7 +211,7 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <Link href="/auth">
-              <Button className="bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-white font-medium rounded-full px-6">
+              <Button className="text-white font-medium rounded-full px-6">
                 Login
               </Button>
             </Link>
@@ -282,7 +288,7 @@ const Navbar = () => {
               </>
             ) : (
               <Link href="/auth">
-                <Button className="w-full bg-[var(--gold)] hover:bg-[var(--gold-dark)] text-white font-medium rounded-full">
+                <Button className="w-full text-white font-medium rounded-full">
                   Login
                 </Button>
               </Link>
